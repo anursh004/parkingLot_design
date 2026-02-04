@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Lot Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f7fb; color: #1d1d1f; }
+        header { margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        section { background: #ffffff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        label { display: block; margin-top: 0.75rem; font-weight: 600; }
+        input, select, button { width: 100%; padding: 0.6rem; margin-top: 0.4rem; border-radius: 8px; border: 1px solid #d7d7e0; }
+        button { background: #2b59c3; color: #fff; border: none; cursor: pointer; font-weight: 600; }
+        button.secondary { background: #4a4a4a; }
+        pre { background: #f0f1f7; padding: 0.75rem; border-radius: 8px; overflow-x: auto; }
+        .hint { font-size: 0.85rem; color: #4a4a4a; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Parking Lot Operations</h1>
+    <p class="hint">Use the default credentials (parking-admin / parking-secret) for secured endpoints.</p>
+</header>
+
+<section>
+    <h2>Auth</h2>
+    <label for="username">Username</label>
+    <input id="username" value="parking-admin" />
+    <label for="password">Password</label>
+    <input id="password" type="password" value="parking-secret" />
+</section>
+
+<div class="grid">
+    <section>
+        <h2>Park Vehicle</h2>
+        <label for="vehicleType">Vehicle Type</label>
+        <select id="vehicleType">
+            <option value="CAR">Car</option>
+            <option value="MOTORCYCLE">Motorcycle</option>
+            <option value="ELECTRIC">Electric</option>
+        </select>
+        <label for="licensePlate">License Plate</label>
+        <input id="licensePlate" placeholder="ABC-1234" />
+        <button onclick="parkVehicle()">Park</button>
+        <pre id="parkResult">Awaiting request...</pre>
+    </section>
+
+    <section>
+        <h2>Exit Vehicle</h2>
+        <label for="ticketId">Ticket Id</label>
+        <input id="ticketId" placeholder="ticket-id" />
+        <button onclick="exitVehicle()">Exit</button>
+        <pre id="exitResult">Awaiting request...</pre>
+    </section>
+
+    <section>
+        <h2>Capacity Snapshot</h2>
+        <button class="secondary" onclick="loadCapacity()">Refresh</button>
+        <pre id="capacityResult">Awaiting request...</pre>
+    </section>
+
+    <section>
+        <h2>OTP Flow</h2>
+        <label for="principal">Principal</label>
+        <input id="principal" placeholder="driver@example.com" />
+        <button onclick="requestOtp()">Request OTP</button>
+        <label for="otp">OTP</label>
+        <input id="otp" placeholder="6-digit OTP" />
+        <button class="secondary" onclick="verifyOtp()">Verify OTP</button>
+        <pre id="otpResult">Awaiting request...</pre>
+    </section>
+</div>
+
+<script>
+    function authHeader() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        return 'Basic ' + btoa(`${username}:${password}`);
+    }
+
+    async function parkVehicle() {
+        const payload = {
+            vehicleType: document.getElementById('vehicleType').value,
+            licensePlate: document.getElementById('licensePlate').value
+        };
+        await request('/api/park', 'parkResult', payload, true);
+    }
+
+    async function exitVehicle() {
+        const payload = { ticketId: document.getElementById('ticketId').value };
+        await request('/api/exit', 'exitResult', payload, true);
+    }
+
+    async function loadCapacity() {
+        await request('/api/capacity', 'capacityResult', null, true, 'GET');
+    }
+
+    async function requestOtp() {
+        const payload = { principal: document.getElementById('principal').value };
+        await request('/api/otp/request', 'otpResult', payload, false);
+    }
+
+    async function verifyOtp() {
+        const payload = {
+            principal: document.getElementById('principal').value,
+            otp: document.getElementById('otp').value
+        };
+        await request('/api/otp/verify', 'otpResult', payload, false);
+    }
+
+    async function request(url, resultId, payload, needsAuth, method = 'POST') {
+        const headers = { 'Content-Type': 'application/json' };
+        if (needsAuth) {
+            headers['Authorization'] = authHeader();
+        }
+        const options = { method, headers };
+        if (payload) {
+            options.body = JSON.stringify(payload);
+        }
+        try {
+            const response = await fetch(url, options);
+            const text = await response.text();
+            document.getElementById(resultId).textContent = text || response.status;
+        } catch (error) {
+            document.getElementById(resultId).textContent = error.toString();
+        }
+    }
+</script>
+</body>
+</html>
