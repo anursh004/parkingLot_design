@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: parkinglot
+  security:
+    user:
+      name: parking-admin
+      password: parking-secret
+      roles: ADMIN
+
+parkinglot:
+  capacity:
+    compact: 50
+    large: 30
+    electric: 10
+  otp:
+    ttl-seconds: 300
+    allowed-attempts: 5
+
+logging:
+  pattern:
+    level: "%5p"
